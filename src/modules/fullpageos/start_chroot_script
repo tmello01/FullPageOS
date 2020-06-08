@@ -18,11 +18,23 @@ apt-get update
 # Display a custom Splashscreen when booting the Rpi
 if [ "$FULLPAGEOS_CUSTOM_SPLASHSCREEN" == "yes" ]
 then
-    apt-get install -y fbi
-    sed -i 's/$/ logo.nologo consoleblank=0 loglevel=0 quiet/' /boot/cmdline.txt
+    #install plymouth for splash screen loading
+    apt-get install -y plymouth plymouth-themes pix-plym-splash
+    #add lines to /boot/cmdline.txt to disable boot text. 
+    sed -i 's/$/ logo.nologo consoleblank=0 loglevel=0 quiet plymouth.ignore-serial-consoles vt.global_cursor_default=0/' /boot/cmdline.txt
+    #change defualt console for cmdline boot text to tty3
+    sed -i 's/console=tty1/console=tty3/g' /boot/cmdline.txt
+    #disable RPi Splash Screen
     echo "disable_splash=1" >> /boot/config.txt
-    systemctl enable splashscreen.service
+    #create symbolic link to plymouth folder for splash screen image
+    ln -s /boot/splash.png /usr/share/plymouth/themes/pix/splash.png
+    #disable getty
     systemctl disable getty@tty1
+    #Remove messages from plymouth that interfere with splash screen picture. 
+    sed -i '/message_sprite = Sprite();/d' /usr/share/plymouth/themes/pix/pix.script
+    sed -i '/message_sprite.SetPosition(screen_width * 0.1, screen_height * 0.9, 10000);/d' /usr/share/plymouth/themes/pix/pix.script
+    sed -i '/my_image = Image.Text(text, 1, 1, 1);/d' /usr/share/plymouth/themes/pix/pix.script
+    sed -i '/message_sprite.SetImage(my_image);/d' /usr/share/plymouth/themes/pix/pix.script
 fi
 
 apt-get remove -y --purge scratch squeak-plugins-scratch squeak-vm python-minecraftpi minecraft-pi sonic-pi oracle-java8-jdk bluej greenfoot libreoffice-common libreoffice-core freepats
